@@ -3,10 +3,8 @@
 (use srfi-1)
 (use srfi-13)
 
-(load "decompressor.scm")
-(load "decompressor/zip.scm")
-(load "decompressor/rar.scm")
-(load "decompressor/tar.scm")
+(declare (uses decompressors))
+
 ;;;;
 ;;;; Welcome to Un, the unfortunately unfinished uniformly unified universal unarchiver!
 ;;;;
