@@ -1,29 +1,48 @@
 (use posix) ;; http://wiki.call-cc.org/man/4/Unit%20posix
+(use files)
+(use srfi-1)
 (use srfi-13)
 
+(load "decompressor.scm")
+(load "decompressor/zip.scm")
+(load "decompressor/rar.scm")
+
+;;;;
+;;;; Welcome to Un, the unfortunately unfinished uniformly unified universal unarchiver!
+;;;;
+
+;; Process command line arguments
 (unless (= 1 (length (command-line-arguments)))
   (print (list "Provide an single command line argument: a path to archive to decompress."))
   (exit))
 
+;; Extract the path and decompose it
 (define filename (first (command-line-arguments)))
 
 (unless (file-exists? filename)
   (print (list "The file" filename "does not exist."))
   (exit))
 
-(define (type path)
-  (let ((p (lambda (e) (string-suffix-ci? e path))))
-    (cond ((p ".zip") `(,(string-drop-right path 4) zip))
-          ((p ".tar") `(,(string-drop-right path 4) tar))
-          ((p ".7z") `(,(string-drop-right path 3) 7z))
-          ((p ".xz") `(,(string-drop-right path 3) xz))
-          (else #f))))
+(define filename-decomposed (call-with-values (lambda () (decompose-pathname filename))
+                              (lambda (base file extension)
+                                (list base file extension))))
 
-(define extension (type filename))
+(define filename-basename (or (first filename-decomposed) ""))
+(define filename-file (second filename-decomposed))
+(define filename-extension (third filename-decomposed)) ;; will be false when no extension
 
-(unless extension
-  (print (list "Unknown or unsupported filetype.")))
+(unless filename-extension
+  (print (list "File has no extension"))
+  (exit))
 
+;; Look up how to extract this type of file, exit it we don't know about it
+(define decompressor (assoc filename-extension decompressors))
+
+(unless decompressor
+  (print (list "I don't know how to handle" filename-extension "files yet"))
+  (exit))
+
+;; Create a directory to extract to
 (define (fresh-directory-name string)
   (if (not (directory-exists? string))
       string
@@ -33,15 +52,26 @@
               (loop (+ counter 1))
               name)))))
 
-(create-directory (fresh-directory-name "bar"))
+(define directory (fresh-directory-name (string-append filename-basename filename-file)))
 
-;; (call-with-values (lambda () (process* "unzip" (list filename)))
-;;   (lambda (in-port out-port proc-id err-port)
-;;     (print "I am parent")
-;;     (write-line "2+3" out-port)
-;;     (print (read-line in-port))
-;;     (write-line "2*3" out-port)
-;;     (print (read-line in-port))
-;;     (write-line "halt" out-port)
-;;     (print (read-line in-port))
-;;     (print "that's all folks")))
+(print (list "Creating directory" directory)) ;; DEBUG
+
+(create-directory directory)
+(unless (directory-exists? directory)
+  (print (list "Could not create directory" directory ".. aborting!"))
+  (exit))
+
+;; Extract the file to the directory
+(call-with-values (lambda () (process* (decompressor-tool decompressor) (decompressor-invocation decompressor filename directory)))
+  (lambda (in-port out-port proc-id err-port)
+    (let loop ()
+      (let ((line (read-line in-port)))
+        (if (not (eof-object? line))
+            (begin (print line)
+                   (loop))
+            (let inner-loop ()
+              (let ((line (read-line err-port)))
+                (if (not (eof-object? line))
+                    (begin (print line)
+                           (loop))
+                    (print "DONE!")))))))))
