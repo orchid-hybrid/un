@@ -1,0 +1,2 @@
+all:
+	csc un.scm
