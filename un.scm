@@ -6,7 +6,7 @@
 (load "decompressor.scm")
 (load "decompressor/zip.scm")
 (load "decompressor/rar.scm")
-
+(load "decompressor/tar.scm")
 ;;;;
 ;;;; Welcome to Un, the unfortunately unfinished uniformly unified universal unarchiver!
 ;;;;
