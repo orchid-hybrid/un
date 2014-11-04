@@ -52,7 +52,7 @@
               (loop (+ counter 1))
               name)))))
 
-(define directory (fresh-directory-name (string-append filename-basename filename-file)))
+(define directory (fresh-directory-name (make-pathname filename-basename filename-file)))
 
 (print (list "Creating directory" directory)) ;; DEBUG
 
