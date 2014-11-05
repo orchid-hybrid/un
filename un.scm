@@ -14,31 +14,41 @@
   (print (list "Provide an single command line argument: a path to archive to decompress."))
   (exit))
 
-;; Extract the path and decompose it
+;; Extract the path and decompose it by looping through the list of decompressors
 (define filename (first (command-line-arguments)))
 
 (unless (file-exists? filename)
   (print (list "The file" filename "does not exist."))
   (exit))
 
-(define filename-decomposed (call-with-values (lambda () (decompose-pathname filename))
-                              (lambda (base file extension)
-                                (list base file extension))))
+(define (string-extension-split-ci? suffix string)
+  ;; This tries to split an extension `.suffix' off the end of a filename
+  ;; returns false if it wasn't there
+  (if (string-suffix-ci? (string-append "." suffix) string)
+      (string-drop-right string (+ 1 (string-length suffix)))
+      #f))
 
-(define filename-basename (or (first filename-decomposed) ""))
+(define filename-decomposed
+  (let ((filename-directory (pathname-directory filename))
+        (filename-basename (pathname-strip-directory filename)))
+    (let loop ((d decompressors))
+      (if (null? d)
+          (begin
+            (print (list "I don't know how to handle" filename-extension "files yet"))
+            (exit))
+          (let ((ext (decompressor-extension (car d))))
+            (cond ((string-extension-split-ci? ext filename-basename)
+                   => (lambda (filename)
+                        (list filename-directory
+                              filename
+                              ext
+                              (car d))))
+                  (else (loop (cdr d)))))))))
+
+(define filename-basename (first filename-decomposed))
 (define filename-file (second filename-decomposed))
 (define filename-extension (third filename-decomposed)) ;; will be false when no extension
-
-(unless filename-extension
-  (print (list "File has no extension"))
-  (exit))
-
-;; Look up how to extract this type of file, exit it we don't know about it
-(define decompressor (assoc filename-extension decompressors))
-
-(unless decompressor
-  (print (list "I don't know how to handle" filename-extension "files yet"))
-  (exit))
+(define decompressor (fourth filename-decomposed))
 
 ;; Create a directory to extract to
 (define (fresh-directory-name string)
