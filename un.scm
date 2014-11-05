@@ -60,7 +60,11 @@
   (exit))
 
 ;; Extract the file to the directory
-(call-with-values (lambda () (process* (decompressor-tool decompressor) (decompressor-invocation decompressor filename directory)))
+(define command (cons (decompressor-tool decompressor) (decompressor-invocation decompressor filename directory)))
+
+(print command)
+
+(call-with-values (lambda () (process* (car command) (cdr command)))
   (lambda (in-port out-port proc-id err-port)
     (let loop ()
       (let ((line (read-line in-port)))
@@ -72,4 +76,12 @@
                 (if (not (eof-object? line))
                     (begin (print (string-append "[!] " line))
                            (loop))
-                    (print "DONE!")))))))))
+                    (call-with-values (lambda () (process-wait proc-id))
+                        (lambda (pid status n)
+                          (cond ((and status (decompressor-error-code? decompressor n))
+                                 (begin
+                                   (print (list "Process failed with exit code" n))
+                                   (delete-directory directory)))
+                                (status (print "DONE!"))
+                                (else (begin
+                                        (print (list "Process exited abnormally, via signal" n)))))))))))))))
