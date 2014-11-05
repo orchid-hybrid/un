@@ -50,7 +50,7 @@
               (loop (+ counter 1))
               name)))))
 
-(define directory (fresh-directory-name (make-pathname filename-basename filename-file)))
+(define directory (fresh-directory-name filename-file))
 
 (print (list "Creating directory" directory)) ;; DEBUG
 
@@ -65,11 +65,11 @@
     (let loop ()
       (let ((line (read-line in-port)))
         (if (not (eof-object? line))
-            (begin (print line)
+            (begin (print (string-append "[ ] " line))
                    (loop))
             (let inner-loop ()
               (let ((line (read-line err-port)))
                 (if (not (eof-object? line))
-                    (begin (print line)
+                    (begin (print (string-append "[!] " line))
                            (loop))
                     (print "DONE!")))))))))

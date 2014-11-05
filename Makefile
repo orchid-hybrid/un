@@ -1,9 +1,12 @@
-all: obj/un.o obj/decompressors.o
+all: obj obj/un.o obj/decompressors.o
 	csc obj/un.o obj/decompressors.o -o un
 
 clean:
 	rm -f obj/*
 	rm -f un
+
+obj:
+	mkdir obj
 
 obj/un.o: un.scm
 	csc -c un.scm -o obj/un.o

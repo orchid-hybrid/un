@@ -1,0 +1,62 @@
+$ un fail.7z 
+(Creating directory fail)
+[ ] 
+[ ] 7-Zip [64] 9.20  Copyright (c) 1999-2010 Igor Pavlov  2010-11-18
+[ ] p7zip Version 9.20 (locale=C,Utf16=off,HugeFiles=on,8 CPUs)
+[ ] 
+[ ] Processing archive: fail.7z
+[ ] 
+[ ] Error: Can not open file as archive
+[ ] 
+DONE!
+
+("Error: Can not open file as archive")
+exit code: 2
+man 7z explains exit codes well
+(2      Fatal error is the only one to look for)
+
+
+$ un fail.rar
+(Creating directory fail-0)
+[ ] 
+[ ] UNRAR 5.20 beta 1 freeware      Copyright (c) 1993-2014 Alexander Roshal
+[ ] 
+[ ] fail.rar is not RAR archive
+[ ] No files to extract
+DONE!
+
+(* "is not RAR archive")
+("No files to extract")
+exit code: 10
+
+$ un fail.zip 
+(Creating directory fail-1)
+[ ] Archive:  fail.zip
+[!]   End-of-central-directory signature not found.  Either this file is not
+[!]   a zipfile, or it constitutes one disk of a multi-part archive.  In the
+[!]   latter case the central directory and zipfile comment will be found on
+[!]   the last disk(s) of this archive.
+[!] unzip:  cannot find zipfile directory in one of fail.zip or
+[!]         fail.zip.zip, and cannot find fail.zip.ZIP, period.
+DONE!
+
+man unzip explains the exit codes well
+exit code: 9
+(exit codes to worry about:
+ 2 generic error
+ 3 severe error
+ 9 zipfiles not found
+ 11 no matching files found
+ 50 disk was full
+ 51 immature end of file
+ 81 unsupported compression)
+
+$ un fail.tar 
+(Creating directory fail-2)
+[!] tar: This does not look like a tar archive
+[!] tar: Exiting with failure status due to previous errors
+DONE!
+
+(tar: This does not look like a tar archive)
+exit code: 2
+(2 fatal error, only code to worry about)
