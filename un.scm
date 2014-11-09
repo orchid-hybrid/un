@@ -34,7 +34,7 @@
     (let loop ((d decompressors))
       (if (null? d)
           (begin
-            (print (list "I don't know how to handle" filename-extension "files yet"))
+            (print (list "I don't know how to handle" (pathname-extension filename) "files yet"))
             (exit))
           (let ((ext (decompressor-extension (car d))))
             (cond ((string-extension-split-ci? ext filename-basename)
@@ -60,17 +60,17 @@
               (loop (+ counter 1))
               name)))))
 
-(define directory (fresh-directory-name filename-file))
+(define directory-path (fresh-directory-name filename-file))
 
-(print (list "Creating directory" directory)) ;; DEBUG
+(print (list "Creating directory" directory-path)) ;; DEBUG
 
-(create-directory directory)
-(unless (directory-exists? directory)
-  (print (list "Could not create directory" directory ".. aborting!"))
+(create-directory directory-path)
+(unless (directory-exists? directory-path)
+  (print (list "Could not create directory" directory-path ".. aborting!"))
   (exit))
 
 ;; Extract the file to the directory
-(define command (cons (decompressor-tool decompressor) (decompressor-invocation decompressor filename directory)))
+(define command (cons (decompressor-tool decompressor) (decompressor-invocation decompressor filename directory-path)))
 
 (print command)
 
@@ -91,7 +91,23 @@
                           (cond ((and status (decompressor-error-code? decompressor n))
                                  (begin
                                    (print (list "Process failed with exit code" n))
-                                   (delete-directory directory)))
+                                   (delete-directory directory-path)
+                                   (exit)))
                                 (status (print "DONE!"))
                                 (else (begin
-                                        (print (list "Process exited abnormally, via signal" n)))))))))))))))
+                                        (print (list "Process exited abnormally, via signal" n))
+                                        (exit))))))))))))))
+
+;; Check how many things were extracted to the directory
+;; and if it was only one move it down and delete the unused directory
+(let ((paths (directory directory-path #t)))
+  (when (= 1 (length paths))
+    (let* ((path (car paths))
+           (tmp-directory (fresh-directory-name ".un")))
+      (rename-file directory-path tmp-directory)
+      (unless (directory-exists? tmp-directory)
+        (print (list "Could not rename directory" directory-path "to" tmp-directory ".. aborting!"))
+        (exit))
+      (let ((to-path (fresh-directory-name (pathname-file path))))
+        (rename-file (make-pathname tmp-directory path) to-path)
+        (delete-directory tmp-directory #f)))))
