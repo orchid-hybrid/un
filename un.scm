@@ -52,11 +52,21 @@
 
 ;; Create a directory to extract to
 (define (fresh-directory-name string)
-  (if (not (directory-exists? string))
+  (if (not (file-exists? string))
       string
       (let loop ((counter 0))
         (let ((name (string-append string (string-append "-" (number->string counter)))))
           (if (directory-exists? name)
+              (loop (+ counter 1))
+              name)))))
+
+(define (fresh-file-name string ext)
+  (if (not (file-exists? (string-append string "." ext)))
+      (string-append string "." ext)
+      (let loop ((counter 0))
+        (let ((name (string-append string (string-append "-" (number->string counter))
+				   "." ext)))
+          (if (file-exists? name)
               (loop (+ counter 1))
               name)))))
 
@@ -108,6 +118,6 @@
       (unless (directory-exists? tmp-directory)
         (print (list "Could not rename directory" directory-path "to" tmp-directory ".. aborting!"))
         (exit))
-      (let ((to-path (fresh-directory-name (pathname-file path))))
+      (let ((to-path (fresh-file-name (pathname-file path) (pathname-extension path))))
         (rename-file (make-pathname tmp-directory path) to-path)
         (delete-directory tmp-directory #f)))))
